@@ -1,0 +1,11 @@
+../Core/Inc/as5600.h:57:21:AS5600_GetAngle	1
+../Core/Src/foc.c:8:6:PI_Init	1
+../Core/Src/foc.c:16:6:PI_Reset	1
+../Core/Src/foc.c:21:7:PI_Update	5
+../Core/Src/foc.c:43:20:_set_pwm	6
+../Core/Src/foc.c:55:6:FOC_SetPhaseVoltage	5
+../Core/Src/foc.c:88:6:FOC_VelocityLoop	1
+../Core/Src/foc.c:98:6:FOC_Init	1
+../Core/Src/foc.c:128:6:FOC_Enable	1
+../Core/Src/foc.c:133:6:FOC_Disable	1
+../Core/Src/foc.c:146:19:FOC_Calibrate	3

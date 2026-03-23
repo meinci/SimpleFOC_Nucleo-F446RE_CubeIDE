@@ -1,0 +1,13 @@
+../Core/Inc/as5600.h:57:21:AS5600_GetAngle	1
+../Core/Inc/foc.h:67:21:FOC_ElecAngle	2
+../Core/Src/main.c:117:5:main	7
+../Core/Src/main.c:197:13:FOC_Task	2
+../Core/Src/main.c:217:13:Log_Task	2
+../Core/Src/main.c:247:13:sensor_tick	6
+../Core/Src/main.c:284:13:stall_update	7
+../Core/Src/main.c:322:13:commutate	1
+../Core/Src/main.c:331:6:SystemClock_Config	4
+../Core/Src/main.c:369:6:HAL_TIM_PeriodElapsedCallback	4
+../Core/Src/main.c:385:6:HAL_I2C_MemRxCpltCallback	2
+../Core/Src/main.c:393:6:HAL_GPIO_EXTI_Callback	5
+../Core/Src/main.c:422:6:Error_Handler	1

@@ -1,0 +1,6 @@
+../Core/Src/as5600.c:13:13:_process	5
+../Core/Src/as5600.c:46:19:AS5600_Init	3
+../Core/Src/as5600.c:67:9:AS5600_GetStatus	1
+../Core/Src/as5600.c:81:19:AS5600_Update	2
+../Core/Src/as5600.c:101:19:AS5600_StartRead	3
+../Core/Src/as5600.c:126:6:AS5600_ProcessRead	1
