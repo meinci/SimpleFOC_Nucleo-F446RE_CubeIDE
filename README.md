@@ -7,7 +7,7 @@ Field Oriented Control (FOC) für einen 3-Phasen BLDC-Motor auf Basis des STM32F
 | Komponente | Details |
 |---|---|
 | Mikrocontroller | STM32F446RE (Nucleo-64) |
-| Motortreiber | SimpleFOC Mini (L6234) |
+| Motortreiber | SimpleFOC Mini |
 | Magnetsensor | AS5600 (I2C, 12-bit) |
 | Versorgung | 12 V |
 | Polpaare | 7 |
