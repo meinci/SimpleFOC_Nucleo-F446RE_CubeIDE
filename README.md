@@ -1,6 +1,6 @@
 # SimpleFOC – STM32 Nucleo-F446RE
 
-Field Oriented Control (FOC) für einen 3-Phasen BLDC-Motor auf Basis des STM32F446RE Mikrocontrollers und der SimpleFOC Mini Treiberplatine (L6234).
+Field Oriented Control (FOC) für einen 3-Phasen BLDC-Motor auf Basis des STM32F446RE Mikrocontrollers und der SimpleFOC Mini Treiberplatine.
 
 ## Hardware
 
