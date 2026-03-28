@@ -1,6 +1,6 @@
-../Core/Src/as5600.c:13:13:_process	48	static
-../Core/Src/as5600.c:46:19:AS5600_Init	32	static
-../Core/Src/as5600.c:67:9:AS5600_GetStatus	40	static
-../Core/Src/as5600.c:81:19:AS5600_Update	40	static
-../Core/Src/as5600.c:101:19:AS5600_StartRead	32	static
-../Core/Src/as5600.c:126:6:AS5600_ProcessRead	16	static
+../Core/Src/as5600.c:12:13:_process	16	static
+../Core/Src/as5600.c:66:9:AS5600_GetStatus	32	static
+../Core/Src/as5600.c:80:19:AS5600_Update	40	static
+../Core/Src/as5600.c:45:19:AS5600_Init	24	static
+../Core/Src/as5600.c:100:19:AS5600_StartRead	16	static
+../Core/Src/as5600.c:116:6:AS5600_ProcessRead	8	static

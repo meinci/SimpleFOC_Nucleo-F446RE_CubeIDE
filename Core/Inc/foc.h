@@ -1,9 +1,11 @@
-/* foc.h ─ Field Oriented Control für STM32 + SimpleFOC Mini (L6234) */
+/* foc.h ─ Field Oriented Control für STM32 + SimpleFOC Mini (L6234)
+ * Betriebsmodi: Geschwindigkeitsregelung + Positionsregelung (Kaskade)
+ */
 #ifndef FOC_H
 #define FOC_H
 
 #include "stm32f4xx_hal.h"
-#include "as5600.h"   /* FIX: benötigt für FOC_Calibrate-Signatur */
+#include "as5600.h"
 #include <stdint.h>
 #include <math.h>
 
@@ -12,6 +14,8 @@
 #define FOC_TWO_PI   6.28318530718f
 #define FOC_PI       3.14159265359f
 
+//#define FOC_POS_DEADBAND   0.05f   /* ~3° Totzone */
+#define FOC_POS_DEADBAND   0.2f   // ~6° – mehr Puffer für abrupten Stop
 /* ── PI-Regler ──────────────────────────────────────────────── */
 typedef struct {
     float Kp;
@@ -39,31 +43,49 @@ typedef struct {
     float    zero_electric_angle;
     uint8_t  calibrated;
 
+    /* Geschwindigkeitsregler */
     PI_t     pi_velocity;
-    float    target_velocity;
-    float    Ud, Uq;
+    float    target_velocity;       /* rad/s – intern von PositionLoop gesetzt */
 
-    /* Drehrichtung: +1 oder -1, wird beim ersten Anlauf automatisch gesetzt */
-    float    direction;
+    /* Positionsregler */
+    PI_t     pi_position;
+    float    target_angle;          /* rad – Sollwinkel (mechanisch) */
+
+    float    Ud, Uq;
+    float    direction;             /* +1.0f oder -1.0f */
 } FOC_t;
 
 /* ── API ────────────────────────────────────────────────────── */
-void FOC_Init (FOC_t *foc,
-               TIM_HandleTypeDef *htim,
-               uint32_t ch1, uint32_t ch2, uint32_t ch3,
-               GPIO_TypeDef *en_port, uint16_t en_pin,
-               float v_supply, int pole_pairs, uint32_t pwm_arr);
+
+/*
+ * FOC_Init – Parameter:
+ *   vel_kp / vel_ki        : Geschwindigkeitsregler (z.B. 0.1 / 0.3)
+ *   pos_kp / pos_ki        : Positionsregler       (z.B. 0.5 / 0.0)
+ *   pos_vel_limit          : max. Ausgang Positionsregler [rad/s] (z.B. 20.0)
+ */
+void FOC_Init(FOC_t *foc,
+              TIM_HandleTypeDef *htim,
+              uint32_t ch1, uint32_t ch2, uint32_t ch3,
+              GPIO_TypeDef *en_port, uint16_t en_pin,
+              float v_supply, int pole_pairs, uint32_t pwm_arr,
+              float vel_kp, float vel_ki,           // <-- neu
+              float pos_kp, float pos_ki, float pos_vel_limit); // <-- neu
 
 void FOC_Enable  (FOC_t *foc);
 void FOC_Disable (FOC_t *foc);
 
 void FOC_SetPhaseVoltage(FOC_t *foc, float Uq, float Ud, float angle_el);
-void FOC_VelocityLoop  (FOC_t *foc, float velocity_measured, float dt);
 
-/* FIX: sensor-Parameter hinzugefügt – Kalibrierung ist jetzt vollständig */
+/* Geschwindigkeitsregelung (standalone) */
+void FOC_VelocityLoop(FOC_t *foc, float velocity_measured, float dt);
+
+/* Positionsregelung (Kaskade: Position → Geschwindigkeit → Uq) */
+void FOC_PositionLoop(FOC_t *foc, float angle_measured,
+                      float velocity_measured, float dt);
+
 HAL_StatusTypeDef FOC_Calibrate(FOC_t *foc, AS5600_t *sensor);
 
-/* Elektrischer Winkel – Drehrichtung über foc->direction */
+/* Elektrischer Winkel */
 static inline float FOC_ElecAngle(const FOC_t *foc, float mech_angle)
 {
     float ea = foc->direction *

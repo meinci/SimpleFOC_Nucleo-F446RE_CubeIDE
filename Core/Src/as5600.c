@@ -1,6 +1,5 @@
-/* as5600.c ─ AS5600 Magnetgeber-Implementierung
- * Non-blocking: HAL_I2C_Mem_Read_IT + HAL_I2C_MemRxCpltCallback
- */
+/* as5600.c ─ AS5600 Magnetgeber-Implementierung*/
+
 #include "as5600.h"
 #include <math.h>
 #include <string.h>
@@ -114,17 +113,9 @@ HAL_StatusTypeDef AS5600_StartRead(AS5600_t *dev)
     return ret;
 }
 
-/* ════════════════════════════════════════════════════════════
-   AS5600_ProcessRead  (NON-BLOCKING CALLBACK)
-   In HAL_I2C_MemRxCpltCallback aufrufen:
-
-     void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-         AS5600_ProcessRead(&sensor);
-     }
-
-   ════════════════════════════════════════════════════════════ */
 void AS5600_ProcessRead(AS5600_t *dev)
 {
     dev->transfer_busy = 0;
     _process(dev, dev->dma_buf);
+    dev->data_ready = 1;
 }

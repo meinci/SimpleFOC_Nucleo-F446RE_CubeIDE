@@ -1,4 +1,4 @@
-/* foc.c ─ FOC-Kern mit SVPWM, Park-Transformation, PI-Regler */
+/* foc.c ─ FOC-Kern: SVPWM, Park-Transformation, PI-Regler, Positionsregelung */
 #include "foc.h"
 #include <string.h>
 
@@ -50,7 +50,7 @@ static inline void _set_pwm(FOC_t *foc, uint32_t ch, float duty)
 
 /* ════════════════════════════════════════════════════════════
    FOC_SetPhaseVoltage
-   inverse Park → inverse Clarke (Sinus-Kommutierung) → PWM
+   inverse Park → inverse Clarke (Sinuskommutierung) → PWM
    ════════════════════════════════════════════════════════════ */
 void FOC_SetPhaseVoltage(FOC_t *foc, float Uq, float Ud, float angle_el)
 {
@@ -71,7 +71,7 @@ void FOC_SetPhaseVoltage(FOC_t *foc, float Uq, float Ud, float angle_el)
     float Ub = -0.5f * Ualpha + FOC_SQRT3_2 * Ubeta;
     float Uc = -0.5f * Ualpha - FOC_SQRT3_2 * Ubeta;
 
-    /* Normieren auf [0, 1] (Mittelpunkt = 0.5) */
+    /* Normieren auf [0, 1] */
     float norm = foc->voltage_supply;
     float Ta   = 0.5f + Ua / norm;
     float Tb   = 0.5f + Ub / norm;
@@ -83,13 +83,47 @@ void FOC_SetPhaseVoltage(FOC_t *foc, float Uq, float Ud, float angle_el)
 }
 
 /* ════════════════════════════════════════════════════════════
-   FOC_VelocityLoop
+   FOC_VelocityLoop  (standalone Geschwindigkeitsregelung)
    ════════════════════════════════════════════════════════════ */
 void FOC_VelocityLoop(FOC_t *foc, float velocity_measured, float dt)
 {
     float error = foc->target_velocity - velocity_measured;
     foc->Uq = PI_Update(&foc->pi_velocity, error, dt);
     foc->Ud = 0.0f;
+}
+
+void FOC_PositionLoop(FOC_t *foc, float angle_measured,
+                      float velocity_measured, float dt)
+{
+    float error = foc->target_angle - angle_measured;
+    float abs_error = fabsf(error);
+
+     //Stop im Deadband//
+    if (abs_error < FOC_POS_DEADBAND) {
+        foc->target_velocity = 0.0f;
+        foc->Uq              = 0.0f;
+        foc->Ud              = 0.0f;
+        PI_Reset(&foc->pi_position);
+        PI_Reset(&foc->pi_velocity);
+        return;
+    }
+
+     /*Volle Geschwindigkeit bis 0.5 rad vor Ziel, dann kurze Rampe*/
+    float brake_zone = 2.3f;    /*~28° Bremszone – anpassen*/
+    float speed;
+
+    if (abs_error > brake_zone) {
+        /* Volle Fahrt*/
+        speed = foc->pi_position.limit;
+    } else {
+         /*Kurze Bremsrampe nur in den letzten 0.5 rad*/
+        speed = foc->pi_position.limit * (abs_error / brake_zone);
+        if (speed < 2.0f) speed = 2.0f;    /*Mindestgeschwindigkeit*/
+    }
+
+    foc->target_velocity = (error > 0.0f) ? speed : -speed;
+
+    FOC_VelocityLoop(foc, velocity_measured, dt);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -99,7 +133,9 @@ void FOC_Init(FOC_t *foc,
               TIM_HandleTypeDef *htim,
               uint32_t ch1, uint32_t ch2, uint32_t ch3,
               GPIO_TypeDef *en_port, uint16_t en_pin,
-              float v_supply, int pole_pairs, uint32_t pwm_arr)
+              float v_supply, int pole_pairs, uint32_t pwm_arr,
+              float vel_kp, float vel_ki,
+              float pos_kp, float pos_ki, float pos_vel_limit)
 {
     memset(foc, 0, sizeof(*foc));
     foc->htim           = htim;
@@ -113,8 +149,11 @@ void FOC_Init(FOC_t *foc,
     foc->pole_pairs     = pole_pairs;
     foc->pwm_arr        = pwm_arr;
     foc->direction      = 1.0f;
+    foc->target_angle   = 0.0f;
+    foc->target_velocity= 0.0f;
 
-    PI_Init(&foc->pi_velocity, 0.1f, 1.0f, foc->voltage_limit);
+    PI_Init(&foc->pi_velocity, vel_kp, vel_ki, foc->voltage_limit);
+    PI_Init(&foc->pi_position, pos_kp, pos_ki, pos_vel_limit);
 
     HAL_TIM_PWM_Start(htim, ch1);
     HAL_TIM_PWM_Start(htim, ch2);
@@ -141,7 +180,6 @@ void FOC_Disable(FOC_t *foc)
 /* ════════════════════════════════════════════════════════════
    FOC_Calibrate
    Motor auf d-Achse (θ_el = 0) ausrichten → Nullwinkel lesen
-   FIX: sensor-Parameter hinzugefügt – Kalibrierung vollständig
    ════════════════════════════════════════════════════════════ */
 HAL_StatusTypeDef FOC_Calibrate(FOC_t *foc, AS5600_t *sensor)
 {
@@ -158,7 +196,6 @@ HAL_StatusTypeDef FOC_Calibrate(FOC_t *foc, AS5600_t *sensor)
 
     FOC_SetPhaseVoltage(foc, 0.0f, 0.0f, 0.0f);
 
-    /* FIX: Nullwinkel direkt hier einlesen und speichern */
     HAL_StatusTypeDef ret = AS5600_Update(sensor);
     if (ret != HAL_OK) return ret;
 

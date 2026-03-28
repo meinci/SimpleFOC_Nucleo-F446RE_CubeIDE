@@ -74,7 +74,8 @@ void Error_Handler(void);
 #define SWO_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-
+#define PI_KP   0.1f
+#define PI_KI   0.3f
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
